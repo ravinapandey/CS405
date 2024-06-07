@@ -1,0 +1,117 @@
+import java.util.concurrent.Semaphore;
+
+class ReaderWriter {
+    public static void main(String[] args) {
+        // Shared resource
+        SharedResource resource = new SharedResource();
+
+        // Create reader and writer threads
+        Thread reader1 = new Thread(new Reader(resource));
+        Thread reader2 = new Thread(new Reader(resource));
+        Thread writer1 = new Thread(new Writer(resource));
+
+        // Start the threads
+        reader1.start();
+        reader2.start();
+        writer1.start();
+    }
+}
+
+// Shared resource class
+class SharedResource {
+    private int data = 0;
+    private int readerCount = 0;
+
+    // Semaphores
+    private Semaphore mutex = new Semaphore(1);
+    private Semaphore writeLock = new Semaphore(1);
+
+    // Reader starts reading
+    public void startRead() throws InterruptedException {
+        mutex.acquire();
+        readerCount++;
+        if (readerCount == 1) {
+            writeLock.acquire(); // First reader locks the resource for writers
+        }
+        mutex.release();
+    }
+
+    // Reader stops reading
+    public void stopRead() throws InterruptedException {
+        mutex.acquire();
+        readerCount--;
+        if (readerCount == 0) {
+            writeLock.release(); // Last reader unlocks the resource for writers
+        }
+        mutex.release();
+    }
+
+    // Writer starts writing
+    public void startWrite() throws InterruptedException {
+        writeLock.acquire();
+    }
+
+    // Writer stops writing
+    public void stopWrite() {
+        writeLock.release();
+    }
+
+    // Read data
+    public int read() {
+        return data;
+    }
+
+    // Write data
+    public void write(int newData) {
+        data = newData;
+    }
+}
+
+// Reader class
+class Reader implements Runnable {
+    private SharedResource resource;
+
+    public Reader(SharedResource resource) {
+        this.resource = resource;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                resource.startRead();
+                System.out.println(Thread.currentThread().getName() + " read: " + resource.read());
+                resource.stopRead();
+                Thread.sleep(500); // Simulate time taken to read
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+
+// Writer class
+class Writer implements Runnable {
+    private SharedResource resource;
+
+    public Writer(SharedResource resource) {
+        this.resource = resource;
+    }
+
+    @Override
+    public void run() {
+        int newData = 0;
+        try {
+            while (true) {
+                resource.startWrite();
+                newData++;
+                resource.write(newData);
+                System.out.println(Thread.currentThread().getName() + " wrote: " + newData);
+                resource.stopWrite();
+                Thread.sleep(1500); // Simulate time taken to write
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
