@@ -1,0 +1,108 @@
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.Semaphore;
+
+class ProducerConsumer {
+    public static void main(String[] args) {
+        // Shared buffer
+        Buffer buffer = new Buffer(5);
+
+        // Create producer and consumer threads
+        Thread producerThread = new Thread(new Producer(buffer));
+        Thread consumerThread = new Thread(new Consumer(buffer));
+
+        // Start the threads
+        producerThread.start();
+        consumerThread.start();
+    }
+}
+
+// Shared buffer class
+class Buffer {
+    private Queue<Integer> queue;
+    private int capacity;
+
+    // Semaphores
+    private Semaphore mutex = new Semaphore(1);
+    private Semaphore empty;
+    private Semaphore full;
+
+    public Buffer(int capacity) {
+        this.queue = new LinkedList<>();
+        this.capacity = capacity;
+        this.empty = new Semaphore(capacity);
+        this.full = new Semaphore(0);
+    }
+
+    public void put(int item) throws InterruptedException {
+        // Wait if buffer is full
+        empty.acquire();
+        // Wait for exclusive access to buffer
+        mutex.acquire();
+        // Add item to buffer
+        queue.add(item);
+        System.out.println("Produced: " + item);
+        // Release exclusive access to buffer
+        mutex.release();
+        // Signal that buffer is not empty
+        full.release();
+    }
+
+    public int take() throws InterruptedException {
+        // Wait if buffer is empty
+        full.acquire();
+        // Wait for exclusive access to buffer
+        mutex.acquire();
+        // Remove item from buffer
+        int item = queue.remove();
+        System.out.println("Consumed: " + item);
+        // Release exclusive access to buffer
+        mutex.release();
+        // Signal that buffer is not full
+        empty.release();
+        return item;
+    }
+}
+
+// Producer class
+class Producer implements Runnable {
+    private Buffer buffer;
+
+    public Producer(Buffer buffer) {
+        this.buffer = buffer;
+    }
+
+    @Override
+    public void run() {
+        int i = 0;
+        try {
+            while (true) {
+                buffer.put(i++);
+                Thread.sleep(1000); // Simulate time taken to produce an item
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
+
+// Consumer class
+class Consumer implements Runnable {
+    private Buffer buffer;
+
+    public Consumer(Buffer buffer) {
+        this.buffer = buffer;
+    }
+
+    @Override
+    public void run() {
+        try {
+            while (true) {
+                buffer.take();
+                Thread.sleep(1500); // Simulate time taken to consume an item
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+    }
+}
