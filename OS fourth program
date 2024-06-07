@@ -1,0 +1,34 @@
+//4. Round Robin CPU Scheduling Algorithm
+//Round Robin is a preemptive scheduling algorithm where each process gets a small unit of CPU time
+//(time quantum), typically between 10-100 milliseconds.
+#include <stdio.h>
+
+typedef struct {
+int id;
+int burstTime;
+} Process;
+
+void findWaitingTime(Process processes[], int n, int quantum) {
+int rem_bt[n];
+for (int i = 0; i < n; i++)
+rem_bt[i] = processes[i].burstTime;
+
+int t = 0; // Current time
+
+while (1) {
+int done = 1;
+
+for (int i = 0; i < n; i++) {
+if (rem_bt[i] > 0) {
+done = 0; // There is a pending process
+
+if (rem_bt[i] > quantum) {
+t += quantum;
+rem_bt[i] -= quantum;
+} else {
+t += rem_bt[i];
+processes[i].burstTime = t; // Store waiting time
+rem_bt[i] = 0;
+
+}
+}
