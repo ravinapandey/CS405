@@ -1,0 +1,94 @@
+import java.util.*;
+
+public class PageReplacementAlgorithms {
+
+    public static void main(String[] args) {
+        int[] pages = {7, 0, 1, 2, 0, 3, 0, 4, 2, 3, 0, 3, 2};
+        int capacity = 4;
+
+        System.out.println("Number of page faults in FIFO: " + fifo(pages, capacity));
+        System.out.println("Number of page faults in LRU: " + lru(pages, capacity));
+        System.out.println("Number of page faults in OPT: " + opt(pages, capacity));
+    }
+
+    public static int fifo(int[] pages, int capacity) {
+        Set<Integer> set = new HashSet<>(capacity);
+        Queue<Integer> indexes = new LinkedList<>();
+
+        int pageFaults = 0;
+        for (int page : pages) {
+            if (!set.contains(page)) {
+                if (set.size() == capacity) {
+                    int val = indexes.poll();
+                    set.remove(val);
+                }
+                set.add(page);
+                indexes.add(page);
+                pageFaults++;
+            }
+        }
+        return pageFaults;
+    }
+
+    public static int lru(int[] pages, int capacity) {
+        Set<Integer> set = new HashSet<>(capacity);
+        Map<Integer, Integer> indexes = new HashMap<>();
+
+        int pageFaults = 0;
+        for (int i = 0; i < pages.length; i++) {
+            int page = pages[i];
+
+            if (!set.contains(page)) {
+                if (set.size() == capacity) {
+                    int lru = Integer.MAX_VALUE, val = Integer.MIN_VALUE;
+                    for (int key : set) {
+                        if (indexes.get(key) < lru) {
+                            lru = indexes.get(key);
+                            val = key;
+                        }
+                    }
+                    set.remove(val);
+                }
+                set.add(page);
+                pageFaults++;
+            }
+            indexes.put(page, i);
+        }
+        return pageFaults;
+    }
+
+    public static int opt(int[] pages, int capacity) {
+        Set<Integer> set = new HashSet<>(capacity);
+
+        int pageFaults = 0;
+        for (int i = 0; i < pages.length; i++) {
+            int page = pages[i];
+
+            if (!set.contains(page)) {
+                if (set.size() == capacity) {
+                    int farthest = i + 1, val = Integer.MIN_VALUE;
+                    for (int key : set) {
+                        int j;
+                        for (j = i + 1; j < pages.length; j++) {
+                            if (pages[j] == key) {
+                                if (j > farthest) {
+                                    farthest = j;
+                                    val = key;
+                                }
+                                break;
+                            }
+                        }
+                        if (j == pages.length) {
+                            val = key;
+                            break;
+                        }
+                    }
+                    set.remove(val);
+                }
+                set.add(page);
+                pageFaults++;
+            }
+        }
+        return pageFaults;
+    }
+}
